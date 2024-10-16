@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Upload and AI Detection</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Upload a Photo for AI Detection</h1>
+
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" id="imageUpload" name="image" accept="image/*" required>
+            <img id="preview" src="#" alt="Image Preview" class="preview-image" style="display:none;">
+            <button type="submit" id="submitBtn" class="submit-button" style="display:none;">Submit</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('imageUpload').addEventListener('change', function(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.getElementById('submitBtn').style.display = 'inline-block';
+            };
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async function(event) {
+            event.preventDefault();  // Prevent form submission
+
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('http://localhost:8000/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                console.log(data)
+                const imageUrl = data.image_url;
+
+                // Send the image URL to your API
+                const apiResponse = await fetch('http://localhost:8000/predict/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ imageurl: imageUrl })
+                });
+        
+                if (!apiResponse.ok) {
+                    throw new Error('Failed to get a response from the API');
+                }
+        
+                const apiData = await apiResponse.json(); // Wait for API response data
+                const message = apiData.result || 'Success!';
+        
+                // Display the response message on the screen
+                document.getElementById('result').innerHTML = `<p>${message}</p>`;
+
+            //    document.getElementById('result').innerHTML = `<p>Image successfully sent to API!</p>`;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<p>Error uploading image.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
