@@ -1,2 +1,3 @@
 import streamlit as st
-st.title("My Streamlit App")
+st.title("AI Project App")
+st.write("This is a simple Streamlit app for the AI project.")
